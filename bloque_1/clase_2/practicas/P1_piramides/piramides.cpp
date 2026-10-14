@@ -17,10 +17,15 @@ const std::string IMAGE = "../data/dog.jpg";
  * @return la imagen reducida: 2^steps veces más pequeña en ancho y en alto
  */
 cv::Mat downscalePyr(const cv::Mat& img, int steps) {
-    //// TODO: CODE HERE
-    cv::Mat result = img.clone();
-    //// END TODO
-    return result;
+    //// TODO: CODE HER
+    cv::Mat downScaled = img.clone();
+    
+    for (size_t i = 0; i < steps; i++)
+    {
+        cv::pyrDown(downScaled, downScaled);
+    }
+
+    return downScaled;
 }
 
 /**
@@ -32,9 +37,14 @@ cv::Mat downscalePyr(const cv::Mat& img, int steps) {
  */
 cv::Mat upscalePyr(const cv::Mat& img, int steps) {
     //// TODO: CODE HERE
-    cv::Mat result = img.clone();
-    //// END TODO
-    return result;
+    cv::Mat upScaled = img.clone();
+    
+    for (size_t i = 0; i < steps; i++)
+    {
+        cv::pyrUp(upScaled, upScaled);
+    }
+
+    return upScaled;
 }
 
 /**
@@ -46,9 +56,9 @@ cv::Mat upscalePyr(const cv::Mat& img, int steps) {
  */
 cv::Mat resizeNearest(const cv::Mat& img, cv::Size size) {
     //// TODO: CODE HERE
-    cv::Mat result = img.clone();
-    //// END TODO
-    return result;
+    cv::Mat resized;
+    cv::resize(img, resized, size, 0, 0, cv::INTER_NEAREST);
+    return resized;
 }
 
 /**
@@ -61,8 +71,7 @@ cv::Mat resizeNearest(const cv::Mat& img, cv::Size size) {
  */
 cv::Mat fixSize(const cv::Mat& img, int height, int width) {
     //// TODO: CODE HERE
-    cv::Mat result = img.clone();
-    //// END TODO
+    auto result = img(cv::Rect(0,0,width,height));
     return result;
 }
 

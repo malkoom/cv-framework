@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-const std::string IMAGE = "../data/dog.jpg"; 
+const std::string IMAGE = "../data/dog.jpg";
 const std::string WINDOW = "P2 filters";
 const std::vector<std::string> NOISE_NAMES = {"none", "gaussian", "salt and pepper"};
 const std::vector<std::string> FILTER_NAMES = {"none", "box", "gauss", "median", "bilateral"};
@@ -28,9 +28,29 @@ const std::vector<std::string> FILTER_NAMES = {"none", "box", "gauss", "median",
  * @param level      gaussiano: desviación típica, en niveles de gris / sal y pimienta: % de píxeles
  * @return la imagen con ruido, en CV_8U
  */
-cv::Mat addNoise(const cv::Mat& img, int noiseType, int level) {
+cv::Mat addNoise(const cv::Mat &img, int noiseType, int level)
+{
     //// TODO: CODE HERE
     cv::Mat result = img.clone();
+
+    // Pistas
+    // cv::randu = /2
+    // cv:.randn = cb::add
+    if (noiseType == 1)
+    {
+        cv::Mat noise(img.size(), CV_16S);
+        cv::randn(noise, 0, level);
+        cv::add(img, noise, result, cv::noArray(), CV_8U);
+    }
+    else if (noiseType == 2)
+    {
+        double amount = level / 100.0;
+        cv::Mat u(img.size(), CV_32F);
+        cv::randu(u, 0, 1);
+        result.setTo(0, u < amount / 2);
+        result.setTo(255, u > 1 - amount / 2);
+    }
+
     //// END TODO
     return result;
 }
@@ -53,48 +73,81 @@ cv::Mat addNoise(const cv::Mat& img, int noiseType, int level) {
  * @param sigmaSpace  bilateral: cuánto pesan los vecinos según su distancia
  * @return la imagen filtrada
  */
-cv::Mat applyFilter(const cv::Mat& img, int filterType, int ksize, int sigmaColor, int sigmaSpace) {
+cv::Mat applyFilter(const cv::Mat &img, int filterType, int ksize, int sigmaColor, int sigmaSpace)
+{
     //// TODO: CODE HERE
     cv::Mat result = img.clone();
+    switch (filterType)
+    {
+    case 0:
+        break;
+
+    case 1:
+        cv::blur(img, result, cv::Size(ksize, ksize));
+        break;
+
+    case 2:
+        cv::GaussianBlur(img, result, cv::Size(ksize, ksize), 0);
+        break;
+
+    case 3:
+        cv::medianBlur(img, result, ksize);
+        break;
+
+    case 4:
+        cv::bilateralFilter(img, result, ksize, sigmaColor, sigmaSpace);
+        break;
+
+    default:
+        break;
+    }
     //// END TODO
     return result;
 }
 
 // OpenCV la llama cada vez que se mueve el trackbar noise
-void noiseChanged(int value, void*) {
+void noiseChanged(int value, void *)
+{
     std::cout << "Noise changed to " << NOISE_NAMES[value] << std::endl;
 }
 
 // OpenCV la llama cada vez que se mueve el trackbar filter
-void filterChanged(int value, void*) {
+void filterChanged(int value, void *)
+{
     std::cout << "Filter changed to " << FILTER_NAMES[value] << std::endl;
 }
 
 // OpenCV la llama cada vez que se mueve el trackbar k
-void kChanged(int value, void*) {
-    if (value % 2 == 0) {
+void kChanged(int value, void *)
+{
+    if (value % 2 == 0)
+    {
         std::cout << "k = " << value << " (even: gauss and median are not applied)" << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "k = " << value << std::endl;
     }
 }
 
-int main() {
+int main()
+{
     cv::Mat img = cv::imread(IMAGE, cv::IMREAD_GRAYSCALE);
-    if (img.empty()) {
+    if (img.empty())
+    {
         std::cerr << "Error: could not read the image" << std::endl;
         return 1;
     }
-    cv::pyrDown(img, img);   // reducir a la mitad
+    cv::pyrDown(img, img); // reducir a la mitad
 
     //// Trackbars
     cv::namedWindow(WINDOW);
-    cv::createTrackbar("noise", WINDOW, nullptr, 2, noiseChanged);    // ver NOISE_NAMES
-    cv::createTrackbar("level", WINDOW, nullptr, 100);       // gaussiano: desviación típica / sal y pimienta: % de píxeles
-    cv::createTrackbar("filter", WINDOW, nullptr, 4, filterChanged);  // ver FILTER_NAMES
-    cv::createTrackbar("k", WINDOW, nullptr, 15, kChanged);  // tamaño del kernel (ventana de k x k píxeles)
-    cv::createTrackbar("sigmaColor", WINDOW, nullptr, 200);  // solo bilateral
-    cv::createTrackbar("sigmaSpace", WINDOW, nullptr, 50);   // solo bilateral
+    cv::createTrackbar("noise", WINDOW, nullptr, 2, noiseChanged);   // ver NOISE_NAMES
+    cv::createTrackbar("level", WINDOW, nullptr, 100);               // gaussiano: desviación típica / sal y pimienta: % de píxeles
+    cv::createTrackbar("filter", WINDOW, nullptr, 4, filterChanged); // ver FILTER_NAMES
+    cv::createTrackbar("k", WINDOW, nullptr, 15, kChanged);          // tamaño del kernel (ventana de k x k píxeles)
+    cv::createTrackbar("sigmaColor", WINDOW, nullptr, 200);          // solo bilateral
+    cv::createTrackbar("sigmaSpace", WINDOW, nullptr, 50);           // solo bilateral
     // Default positions for the trackbars
     cv::setTrackbarPos("noise", WINDOW, 1);
     cv::setTrackbarPos("level", WINDOW, 20);
@@ -107,7 +160,8 @@ int main() {
     cv::setTrackbarMin("sigmaColor", WINDOW, 1);
     cv::setTrackbarMin("sigmaSpace", WINDOW, 1);
 
-    while (true) {
+    while (true)
+    {
         int noiseType = cv::getTrackbarPos("noise", WINDOW);
         int level = cv::getTrackbarPos("level", WINDOW);
         int filterType = cv::getTrackbarPos("filter", WINDOW);
@@ -121,7 +175,8 @@ int main() {
 
         // Gauss y mediana solo admiten un tamaño impar: avisar cuando no se aplican
         std::string warning = "";
-        if ((filterType == 2 || filterType == 3) && ksize % 2 == 0) {
+        if ((filterType == 2 || filterType == 3) && ksize % 2 == 0)
+        {
             warning = "   |   WARNING: even k, filter not applied";
         }
 
@@ -133,7 +188,8 @@ int main() {
               << "noisy: " << cv::PSNR(img, noisy) << " dB   |   filtered: " << cv::PSNR(img, filtered) << " dB"
               << warning;
         cv::setWindowTitle(WINDOW, title.str());
-        if (cv::waitKey(30) == 27) {
+        if (cv::waitKey(30) == 27)
+        {
             break;
         }
     }

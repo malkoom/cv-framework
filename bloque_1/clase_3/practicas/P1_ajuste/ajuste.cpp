@@ -18,10 +18,15 @@ const int WIDTH = 800, HEIGHT = 600;
  * @param points  puntos (x, y), en píxeles; al menos 2
  * @return dos puntos (p1, p2) de la recta, uno a cada lado para que cv::line la dibuje de borde a borde
  */
-std::pair<cv::Point, cv::Point> lineFit(const std::vector<cv::Point>& points) {
+std::pair<cv::Point, cv::Point> lineFit(const std::vector<cv::Point> &points)
+{
     //// TODO: CODE HERE
-    cv::Point p1(0, 0);
-    cv::Point p2(0, 0);
+    cv::Vec4f vec;
+    cv::fitLine(points, vec, cv::DistanceTypes::DIST_L2, 0, 0.01, 0.01);
+    float vx = vec[0], vy = vec[1], x0 = vec[2], y0 = vec[3];
+    cv::Point p1(x0 - 1000 * vx, y0 - 1000 * vy);
+    cv::Point p2(x0 + 1000 * vx, y0 + 1000 * vy);
+
     //// END TODO
     return {p1, p2};
 }
@@ -36,9 +41,17 @@ std::pair<cv::Point, cv::Point> lineFit(const std::vector<cv::Point>& points) {
  * @param points  puntos (x, y), en píxeles; al menos 5
  * @return los coeficientes c0 ... c4, en una matriz CV_64F de 5 filas x 1 columna
  */
-cv::Mat polyFit(const std::vector<cv::Point>& points) {
+cv::Mat polyFit(const std::vector<cv::Point> &points)
+{
     //// TODO: CODE HERE
     cv::Mat c = cv::Mat::zeros(5, 1, CV_64F);
+    cv::Mat A = cv::Mat::ones(points.size(), 5, CV_64F);
+
+    for (int i = 1; i < points.size(); i++)
+    {
+        
+    }
+
     //// END TODO
     return c;
 }
@@ -50,11 +63,14 @@ cv::Mat polyFit(const std::vector<cv::Point>& points) {
  * @return un punto (px, y) por cada columna px de 0 a WIDTH - 1, con y limitada entre -HEIGHT y
  *         2 * HEIGHT: fuera del lienzo no se ve
  */
-std::vector<cv::Point> polyCurve(const cv::Mat& c) {
+std::vector<cv::Point> polyCurve(const cv::Mat &c)
+{
     std::vector<cv::Point> curve;
-    for (int px = 0; px < WIDTH; px++) {
+    for (int px = 0; px < WIDTH; px++)
+    {
         double y = 0;
-        for (int power = 0; power < 5; power++) {  // y = c0 + c1 x + c2 x^2 + c3 x^3 + c4 x^4
+        for (int power = 0; power < 5; power++)
+        { // y = c0 + c1 x + c2 x^2 + c3 x^3 + c4 x^4
             y = y + c.at<double>(power) * std::pow(px, power);
         }
         y = std::max((double)-HEIGHT, std::min(2.0 * HEIGHT, y));
@@ -67,23 +83,30 @@ std::vector<cv::Point> polyCurve(const cv::Mat& c) {
 std::vector<cv::Point> points;
 
 // OpenCV la llama cada vez que se hace algo con el ratón sobre la ventana
-void mouseClicked(int event, int x, int y, int, void*) {
-    if (event == cv::EVENT_LBUTTONDOWN) {
+void mouseClicked(int event, int x, int y, int, void *)
+{
+    if (event == cv::EVENT_LBUTTONDOWN)
+    {
         points.push_back(cv::Point(x, y));
         std::cout << "Point added at (" << x << ", " << y << "): " << points.size() << " points" << std::endl;
-    } else if (event == cv::EVENT_RBUTTONDOWN && !points.empty()) {
+    }
+    else if (event == cv::EVENT_RBUTTONDOWN && !points.empty())
+    {
         points.pop_back();
         std::cout << "Last point removed: " << points.size() << " points" << std::endl;
     }
-}
+})
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     //// Línea de comandos: line o poly
     std::string mode = "";
-    if (argc > 1) {
+    if (argc > 1)
+    {
         mode = argv[1];
     }
-    if (mode != "line" && mode != "poly") {
+    if (mode != "line" && mode != "poly")
+    {
         std::cerr << "Usage: ./build/ajuste line | poly" << std::endl;
         return 1;
     }
@@ -91,20 +114,24 @@ int main(int argc, char** argv) {
     cv::namedWindow(WINDOW);
     cv::setMouseCallback(WINDOW, mouseClicked);
 
-    while (true) {
+    while (true)
+    {
         cv::Mat canvas = cv::Mat::zeros(HEIGHT, WIDTH, CV_8UC3);
-        for (const cv::Point& p : points) {
+        for (const cv::Point &p : points)
+        {
             cv::circle(canvas, p, 5, cv::Scalar(255, 255, 255), -1);
         }
         std::string title = mode + ": not enough points";
 
-        if (mode == "line" && points.size() >= 2) {
+        if (mode == "line" && points.size() >= 2)
+        {
             //// 1. Recta con cv::fitLine
             auto [p1, p2] = lineFit(points);
             cv::line(canvas, p1, p2, cv::Scalar(0, 0, 255), 2);
             title = "line";
-
-        } else if (mode == "poly" && points.size() >= 5) {
+        }
+        else if (mode == "poly" && points.size() >= 5)
+        {
             //// 2. Polinomio de grado 4 con cv::solve
             std::vector<cv::Point> curve = polyCurve(polyFit(points));
             cv::polylines(canvas, curve, false, cv::Scalar(0, 0, 255), 2);
@@ -114,9 +141,12 @@ int main(int argc, char** argv) {
         cv::imshow(WINDOW, canvas);
         cv::setWindowTitle(WINDOW, title + "   (" + std::to_string(points.size()) + " points)");
         int key = cv::waitKey(30);
-        if (key == 27) {
+        if (key == 27)
+        {
             break;
-        } else if (key == 'c') {
+        }
+        else if (key == 'c')
+        {
             points.clear();
             std::cout << "All points cleared" << std::endl;
         }

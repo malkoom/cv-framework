@@ -47,10 +47,19 @@ cv::Mat polyFit(const std::vector<cv::Point> &points)
     cv::Mat c = cv::Mat::zeros(5, 1, CV_64F);
     cv::Mat A = cv::Mat::ones(points.size(), 5, CV_64F);
 
-    for (int i = 1; i < points.size(); i++)
-    {
-        
+     int n = static_cast<int>(points.size());
+    cv::Mat A = cv::Mat::zeros(n, 5, CV_64F);
+    cv::Mat b = cv::Mat::zeros(n, 1, CV_64F);
+    for (int i = 0; i < n; i++) {
+        double x = points.at(i).x;
+        double y = points.at(i).y;
+        for (int power = 0; power < 5; power++) {
+            A.at<double>(i, power) = std::pow(x, power);
+        }
+        b.at<double>(i, 0) = y;
     }
+    cv::Mat c;
+    cv::solve(A, b, c, cv::DECOMP_SVD);
 
     //// END TODO
     return c;
@@ -95,7 +104,7 @@ void mouseClicked(int event, int x, int y, int, void *)
         points.pop_back();
         std::cout << "Last point removed: " << points.size() << " points" << std::endl;
     }
-})
+}
 
 int main(int argc, char **argv)
 {

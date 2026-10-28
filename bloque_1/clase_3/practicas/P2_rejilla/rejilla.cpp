@@ -25,6 +25,7 @@ std::vector<cv::Vec2f> findLines(const cv::Mat& edges, double rhoRes, double the
                                  double minTheta, double maxTheta) {
     //// TODO: CODE HERE
     std::vector<cv::Vec2f> lines;
+    cv::HoughLines(edges, lines, rhoRes, thetaRes, votes, 0, 0, minTheta, maxTheta);
     //// END TODO
     return lines;
 }
@@ -39,6 +40,16 @@ std::vector<cv::Vec2f> findLines(const cv::Mat& edges, double rhoRes, double the
  */
 void drawLine(cv::Mat& img, double rho, double theta, const cv::Scalar& color) {
     //// TODO: CODE HERE
+    int length = img.cols + img.rows;      // más que la diagonal de la imagen
+    double x0 = rho * std::cos(theta); 
+    double y0 = rho * std::sin(theta);
+    // El vector normal a la recta es (cos(theta), sin(theta)), queremos el vector perpendicular -> + 90 grados
+    // cos(theta + 90) = -sin(theta)  || sin(theta + 90) = cos(theta) 
+    double dx = -std::sin(theta);
+    double dy = std::cos(theta);
+    cv::Point p1((int)(x0 - length * dx), (int)(y0 - length * dy));
+    cv::Point p2((int)(x0 + length * dx), (int)(y0 + length * dy));
+    cv::line(img, p1, p2, color, 2);
     //// END TODO
 }
 
@@ -52,6 +63,18 @@ void drawLine(cv::Mat& img, double rho, double theta, const cv::Scalar& color) {
 bool crossing(const cv::Vec2f& line1, const cv::Vec2f& line2, cv::Point2d& point) {
     //// TODO: CODE HERE
     bool found = false;
+    // Dos rectas: dos ecuaciones, dos incógnitas (x, y)
+    double rho1 = line1[0], theta1 = line1[1];
+    double rho2 = line2[0], theta2 = line2[1];
+    cv::Mat_<double> A({2, 2}, {std::cos(theta1), std::sin(theta1),
+                                std::cos(theta2), std::sin(theta2)});
+    cv::Mat_<double> b({2, 1}, {rho1, rho2});
+    cv::Mat p;
+    bool ok = cv::solve(A, b, p);
+    if (ok) {
+        point = cv::Point2d(p.at<double>(0), p.at<double>(1));
+        found = true;
+    }
     //// END TODO
     return found;
 }

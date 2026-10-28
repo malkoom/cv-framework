@@ -17,13 +17,16 @@ const int MAX_WIDTH = 1000;
 const int DISPLAY_HEIGHT = 500;
 
 /** Lee la imagen y la reduce a MAX_WIDTH de ancho si es más grande. */
-cv::Mat load(const std::string& path) {
+cv::Mat load(const std::string &path)
+{
     cv::Mat img = cv::imread(path);
-    if (img.empty()) {
+    if (img.empty())
+    {
         std::cout << "Cannot read " << path << std::endl;
         std::exit(1);
     }
-    if (img.cols > MAX_WIDTH) {
+    if (img.cols > MAX_WIDTH)
+    {
         double scale = double(MAX_WIDTH) / img.cols;
         cv::resize(img, img, cv::Size(), scale, scale, cv::INTER_AREA);
     }
@@ -31,9 +34,11 @@ cv::Mat load(const std::string& path) {
 }
 
 /** Muestra la imagen reducida a DISPLAY_HEIGHT de alto si es más alta. Solo cambia lo que se ve. */
-void show(const std::string& window, const cv::Mat& img) {
+void show(const std::string &window, const cv::Mat &img)
+{
     cv::Mat shown = img;
-    if (img.rows > DISPLAY_HEIGHT) {
+    if (img.rows > DISPLAY_HEIGHT)
+    {
         double scale = double(DISPLAY_HEIGHT) / img.rows;
         cv::resize(img, shown, cv::Size(), scale, scale, cv::INTER_AREA);
     }
@@ -48,8 +53,18 @@ void show(const std::string& window, const cv::Mat& img) {
  * @param descriptors  (salida) matriz CV_32F de N filas x 128 columnas, un descriptor por keypoint, en
  *                     el mismo orden
  */
-void detectFeatures(const cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) {
+void detectFeatures(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+{
     //// TODO: CODE HERE
+    // Convertir la imagen a escala de grises
+    cv::Mat gray;
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+
+    // Crear el detector SIFT
+    cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
+
+    // Detectar keypoints y calcular descriptores
+    sift->detectAndCompute(gray, cv::noArray(), keypoints, descriptors);
     //// END TODO
 }
 
@@ -68,16 +83,32 @@ void detectFeatures(const cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, cv
  * @param ratio         [0,1] -> cuanto más pequeño, más exigente
  * @return los emparejamientos
  */
-std::vector<cv::DMatch> matchFeatures(const cv::Mat& desc1, const cv::Mat& desc2, double ratio) {
+std::vector<cv::DMatch> matchFeatures(const cv::Mat &desc1, const cv::Mat &desc2, double ratio)
+{
     cv::BFMatcher matcher(cv::NORM_L2);
-    std::vector<std::vector<cv::DMatch>> knn;   // knn[i] = los 2 vecinos más cercanos del descriptor i
+    std::vector<std::vector<cv::DMatch>> knn;
+    matcher.knnMatch(desc1, desc2, knn, 2);
+
     //// TODO: CODE HERE
     std::vector<cv::DMatch> matches;
+
+    for (const auto& neighbors : knn) {
+        if (neighbors.size() < 2)
+            continue;
+
+        const cv::DMatch& best = neighbors[0];
+        const cv::DMatch& second = neighbors[1];
+
+        if (best.distance < ratio * second.distance) {
+            matches.push_back(best);
+        }
+    }
     //// END TODO
     return matches;
 }
 
-int main() {
+int main()
+{
     //// 1. Las dos imágenes
     cv::Mat img1 = load(IMAGE_1);
     cv::Mat img2 = load(IMAGE_2);
@@ -99,12 +130,15 @@ int main() {
     cv::setTrackbarPos("ratio x100", WINDOW_MATCHES, 75);
 
     double lastRatio = -1;
-    while (true) {
+    while (true)
+    {
         double ratio = std::max(1, cv::getTrackbarPos("ratio x100", WINDOW_MATCHES)) / 100.0;
-        if (ratio != lastRatio) {
+        if (ratio != lastRatio)
+        {
             lastRatio = ratio;
             std::vector<cv::DMatch> matches;
-            if (!desc1.empty() && !desc2.empty()) {
+            if (!desc1.empty() && !desc2.empty())
+            {
                 matches = matchFeatures(desc1, desc2, ratio);
             }
             cv::Mat shown;
@@ -113,7 +147,8 @@ int main() {
             show(WINDOW_MATCHES, shown);
             cv::setWindowTitle(WINDOW_MATCHES, cv::format("ratio %.2f: %d matches", ratio, (int)matches.size()));
         }
-        if (cv::waitKey(50) == 27) {
+        if (cv::waitKey(50) == 27)
+        {
             break;
         }
     }
